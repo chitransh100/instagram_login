@@ -3,63 +3,64 @@ import { BackgroundLines } from "./ui/background-lines";
 import { Instagram } from "lucide-react";
 
 export function BackgroundLinesDemo() {
-  // Load Facebook SDK and initialize when component mounts
+  // Load Facebook SDK when the component mounts
   useEffect(() => {
-    // Check if SDK already loaded
+    // If FB SDK is already loaded, do nothing
     if (window.FB) return;
 
+    // This function will be called once the SDK script loads
     window.fbAsyncInit = function () {
       window.FB.init({
-        appId: "1090787969658880", // 🔴 Replace with your App ID
+        appId: "1090787969658880", // ✅ Replace with your App ID
         cookie: true,
         xfbml: true,
-        version: "v19.0", // 🔴 Replace with your Graph API version
+        version: "v19.0", // ✅ Replace with your Graph API version
       });
 
-      window.FB.AppEvents.logPageView();
+      console.log("✅ Facebook SDK initialized");
     };
 
-    // Load the SDK script
+    // Dynamically load the Facebook SDK script
     (function (d, s, id) {
-      var js,
-        fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) {
-        return;
-      }
-      js = d.createElement(s);
+      const fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      const js = d.createElement(s);
       js.id = id;
       js.src = "https://connect.facebook.net/en_US/sdk.js";
       fjs.parentNode.insertBefore(js, fjs);
     })(document, "script", "facebook-jssdk");
   }, []);
 
-  // Your login handler
+  // Handle Facebook Login
   const handleLogin = () => {
     if (!window.FB) {
-      console.error("Facebook SDK not loaded yet!");
+      console.error("❌ Facebook SDK not loaded yet!");
       return;
     }
 
     window.FB.login(
       function (response) {
         if (response.authResponse) {
-          console.log("Successfully logged in!", response);
-          // Example: Get user info
+          console.log("✅ Successfully logged in!");
+          const accessToken = response.authResponse.accessToken;
+          console.log("🔑 User Access Token:", accessToken);
+
+          // Example: Fetch basic user info
           window.FB.api("/me", { fields: "name,email" }, function (userInfo) {
-            console.log("User Info:", userInfo);
+            console.log("🙋 User Info:", userInfo);
           });
         } else {
-          console.log("User cancelled login or did not fully authorize.");
+          console.log("⚠️ User cancelled login or did not fully authorize.");
         }
       },
-      { scope: "public_profile,email" }
+      { scope: "public_profile,email" } // ✅ Add more scopes if needed
     );
   };
 
   return (
     <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
       <div
-        className="flex items-center justify-center w-full flex-col px-4"
+        className="flex items-center justify-center w-full flex-col px-4 cursor-pointer"
         onClick={handleLogin}
       >
         <Instagram className="w-[100px] h-[100px] text-pink-600" />
