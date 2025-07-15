@@ -3,6 +3,7 @@ import { BackgroundLines } from "./ui/background-lines";
 import { Instagram } from "lucide-react";
 import PrivacyPolicy from "./PrivacyPolicy";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export function BackgroundLinesDemo() {
   const navigate = useNavigate();
@@ -81,6 +82,13 @@ export function BackgroundLinesDemo() {
       >
         View Privacy Policy
       </button>
+      <Link to="/terms-of-service">
+        <button
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Terms Of Service
+        </button>
+      </Link>
     </BackgroundLines>
   );
 }
