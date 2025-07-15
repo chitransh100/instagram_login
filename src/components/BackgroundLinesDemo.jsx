@@ -48,10 +48,13 @@ export function BackgroundLinesDemo() {
           console.log("✅ Successfully logged in!");
           const accessToken = response.authResponse.accessToken;
           console.log("🔑 User Access Token:", accessToken);
+          localStorage.setItem("fb_token", accessToken);
 
           // Example: Fetch basic user info
           window.FB.api("/me", { fields: "name,email" }, function (userInfo) {
             console.log("🙋 User Info:", userInfo);
+            console.log("✅ Logged in, redirecting...");
+            navigate("/dashboard");
           });
         } else {
           console.log("⚠️ User cancelled login or did not fully authorize.");
