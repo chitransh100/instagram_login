@@ -57,7 +57,7 @@ export function BackgroundLinesDemo() {
           console.log("⚠️ User cancelled login or did not fully authorize.");
         }
       },
-      { scope: "public_profile,email" } // ✅ Add more scopes if needed
+      {  scope: "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish" } // ✅ Add more scopes if needed
     );
   };
 
