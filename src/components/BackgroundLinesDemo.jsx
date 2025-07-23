@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 const INSTAGRAM_CLIENT_ID = "1112094804104263";
-const REDIRECT_URI = "https://localhost:5173/dashboard"; // Must match Facebook App OAuth Redirect URI
+const REDIRECT_URI = "https://instagram-login-gamma-rust.vercel.app/dashboard"; // Must match Facebook App OAuth Redirect URI
 
 export function BackgroundLinesDemo() {
   const [accessToken, setAccessToken] = useState(null);
@@ -21,7 +21,7 @@ export function BackgroundLinesDemo() {
 
   // Step 2: Open Instagram login popup
   const handleLogin = () => {
-    const authURL = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1112094804104263&redirect_uri=https://localhost:5173/dashboard&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
+    const authURL = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1112094804104263&redirect_uri=https://instagram-login-gamma-rust.vercel.app/dashboard&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
     window.open(authURL, "Instagram Login", "width=600,height=700");
   };
 
