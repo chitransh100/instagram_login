@@ -6,6 +6,7 @@ export default function Dashboard() {
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState(null);
   const [message, setMessage] = useState("");
+  const [instagramData, setInstagramData] = useState(null);
 
   useEffect(() => {
     const userAccessToken = localStorage.getItem("fb_token");
@@ -14,6 +15,7 @@ export default function Dashboard() {
       return;
     }
 
+    // STEP 1: Fetch Facebook Pages
     axios
       .get(`https://graph.facebook.com/v19.0/me/accounts`, {
         params: {
@@ -21,13 +23,58 @@ export default function Dashboard() {
         },
       })
       .then((response) => {
-        console.log("Pages:", response.data);
+        console.log("Facebook Pages:", response.data);
         setPages(response.data.data);
       })
       .catch((error) => {
         console.error("Error fetching pages:", error);
       });
   }, []);
+
+  // STEP 2: Fetch Instagram Business Account Info (after page is selected)
+  useEffect(() => {
+    if (!selectedPage) return;
+
+    const fetchInstagramInfo = async () => {
+      try {
+        // Get Instagram Business Account ID linked to the selected page
+        const pageInfo = await axios.get(
+          `https://graph.facebook.com/v19.0/${selectedPage.id}`,
+          {
+            params: {
+              fields: "instagram_business_account",
+              access_token: selectedPage.access_token,
+            },
+          }
+        );
+
+        const igAccount = pageInfo.data.instagram_business_account;
+        if (!igAccount) {
+          console.warn("No Instagram business account linked to this page.");
+          setInstagramData(null);
+          return;
+        }
+
+        // STEP 3: Fetch Instagram account details
+        const igData = await axios.get(
+          `https://graph.facebook.com/v19.0/${igAccount.id}`,
+          {
+            params: {
+              fields: "username,profile_picture_url,followers_count,biography,ig_id,account_type",
+              access_token: selectedPage.access_token,
+            },
+          }
+        );
+
+        setInstagramData(igData.data);
+        console.log("Instagram Business Info:", igData.data);
+      } catch (error) {
+        console.error("Error fetching Instagram data:", error.response || error);
+      }
+    };
+
+    fetchInstagramInfo();
+  }, [selectedPage]);
 
   const handlePost = async () => {
     if (!selectedPage) {
@@ -85,6 +132,24 @@ export default function Dashboard() {
         >
           Publish Post
         </button>
+
+        {/* Show Instagram Info if available */}
+        {instagramData && (
+          <div className="mt-8 p-4 border rounded bg-white shadow-md">
+            <h2 className="text-lg font-semibold mb-2">
+              Instagram Account Linked
+            </h2>
+            <img
+              src={instagramData.profile_picture_url}
+              alt="IG Profile"
+              className="rounded-full w-20 h-20 mb-2"
+            />
+            <p><strong>Username:</strong> @{instagramData.username}</p>
+            <p><strong>Followers:</strong> {instagramData.followers_count}</p>
+            <p><strong>Account Type:</strong> {instagramData.account_type}</p>
+            <p><strong>Bio:</strong> {instagramData.biography}</p>
+          </div>
+        )}
       </div>
     </BackgroundLines>
   );

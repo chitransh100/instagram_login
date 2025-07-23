@@ -1,151 +1,95 @@
 import React, { useEffect, useState } from "react";
-import { BackgroundLines } from "./ui/background-lines";
-import { Instagram } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
+
+const INSTAGRAM_CLIENT_ID = "1112094804104263";
+const REDIRECT_URI = "https://localhost:5173/dashboard"; // Must match Facebook App OAuth Redirect URI
 
 export function BackgroundLinesDemo() {
-  const navigate = useNavigate();
+  const [accessToken, setAccessToken] = useState(null);
   const [userData, setUserData] = useState(null);
 
+  // Step 1: On mount, check for ?code in URL (after Instagram login redirect)
   useEffect(() => {
-    if (window.FB) return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get("code");
 
-    window.fbAsyncInit = function () {
-      window.FB.init({
-        appId: "1391874735257085",
-        cookie: true,
-        xfbml: true,
-        version: "v19.0",
-      });
-      console.log("Facebook SDK initialized");
-    };
-
-    (function (d, s, id) {
-      const fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) return;
-      const js = d.createElement(s);
-      js.id = id;
-      js.src = "https://connect.facebook.net/en_US/sdk.js";
-      fjs.parentNode.insertBefore(js, fjs);
-    })(document, "script", "facebook-jssdk");
+    if (code && !accessToken) {
+      console.log("OAuth code received:", code);
+      exchangeCodeForToken(code);
+    }
   }, []);
 
+  // Step 2: Open Instagram login popup
   const handleLogin = () => {
-    if (!window.FB) {
-      console.error("Facebook SDK not loaded yet!");
-      return;
-    }
+    const authURL = `https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=1112094804104263&redirect_uri=https://localhost:5173/dashboard&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights`;
+    window.open(authURL, "Instagram Login", "width=600,height=700");
+  };
 
-    window.FB.login(
-      function (response) {
-        if (response.authResponse) {
-          const accessToken = response.authResponse.accessToken;
-          console.log("User Access Token:", accessToken);
-          localStorage.setItem("fb_token", accessToken);
-
-          // Get list of pages user manages
-          window.FB.api("/me/accounts", function (pagesResponse) {
-            if (
-              pagesResponse.data &&
-              pagesResponse.data.length > 0 &&
-              pagesResponse.data[0].id
-            ) {
-              const pageId = pagesResponse.data[0].id;
-
-              // Get Instagram business account ID
-              window.FB.api(
-                `/${pageId}?fields=instagram_business_account`,
-                function (pageInfo) {
-                  const igId =
-                    pageInfo.instagram_business_account &&
-                    pageInfo.instagram_business_account.id;
-
-                  if (!igId) {
-                    alert("No connected Instagram Business account found.");
-                    return;
-                  }
-
-                  // Get Instagram profile data
-                  window.FB.api(
-                    `/${igId}?fields=name,username,profile_picture_url,followers_count`,
-                    function (igData) {
-                      console.log("Instagram Info:", igData);
-                      setUserData(igData); // Show modal with user data
-                    }
-                  );
-                }
-              );
-            } else {
-              alert("No Facebook Pages found or no permissions.");
-            }
-          });
-        } else {
-          console.log("User cancelled login or did not fully authorize.");
+  // Step 3: Exchange code for access token
+  const exchangeCodeForToken = async (code) => {
+    console.log("Exchanging code for token:", code);
+    try {
+      const response = await axios.post(
+        "https://cors-anywhere.herokuapp.com/https://api.instagram.com/oauth/access_token",
+        null,
+        {
+          params: {
+            client_id: INSTAGRAM_CLIENT_ID,
+            client_secret: "2222953956615d5101b1aaf7929dbe15", // 🔴 Don't expose this in production
+            grant_type: "authorization_code",
+            redirect_uri: REDIRECT_URI,
+            code: code,
+          },
         }
-      },
-      {
-        scope:
-          "public_profile,email,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish",
-      }
-    );
+      );
+
+      const token = response.data.access_token;
+      console.log("Access token received:", token);
+
+      setAccessToken(token);
+      localStorage.setItem("insta_token", token);
+      fetchUserData(token);
+    } catch (error) {
+      console.error("Token exchange failed:", error.response || error);
+    }
   };
 
-  const handleContinue = () => {
-    navigate("/dashboard");
-  };
-
-  const handlePolicy = () => {
-    navigate("/privacy-policy");
+  // Step 4: Use token to fetch user data
+  const fetchUserData = async (token) => {
+    console.log("Fetching user data with token:", token);
+    try {
+      const response = await axios.get(
+        `https://graph.instagram.com/me?fields=id,username,account_type,media_count,profile_picture_url&access_token=${token}`
+      );
+      setUserData(response.data);
+      console.log("Instagram User Data:", response.data);
+    } catch (error) {
+      console.error("Fetching user data failed:", error.response || error);
+    }
   };
 
   return (
-    <BackgroundLines className="flex items-center justify-center w-full flex-col px-4">
-      <div
-        className="flex items-center justify-center w-full flex-col px-4 cursor-pointer"
-        onClick={handleLogin}
-      >
-        <Instagram className="w-[100px] h-[100px] text-pink-600" />
-        <p className="font-[_fantasy] text-white text-3xl">
-          Login with Instagram
-        </p>
-      </div>
-
-      <button
-        onClick={handlePolicy}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-      >
-        View Privacy Policy
-      </button>
-
-      <Link to="/terms-of-service">
-        <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
-          Terms Of Service
+    <div className="App" style={{ textAlign: "center", marginTop: "5rem" }}>
+      {!accessToken ? (
+        <button onClick={handleLogin} style={{ fontSize: "20px", padding: "10px 20px" }}>
+          🔗 Login with Instagram
         </button>
-      </Link>
-
-      {/* Instagram User Info Modal */}
-      {userData && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-[90%] max-w-md text-center relative">
-            <img
-              src={userData.profile_picture_url}
-              alt="Profile"
-              className="w-24 h-24 rounded-full mx-auto mb-4"
-            />
-            <h2 className="text-xl font-bold mb-2">{userData.name}</h2>
-            <p className="text-gray-600 mb-1">@{userData.username}</p>
-            <p className="text-gray-700 mb-4">
-              Followers: {userData.followers_count}
-            </p>
-            <button
-              onClick={handleContinue}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-            >
-              Continue to Dashboard
-            </button>
-          </div>
+      ) : userData ? (
+        <div>
+          <img
+            src={userData.profile_picture_url}
+            alt="Profile"
+            width="100"
+            height="100"
+            style={{ borderRadius: "50%" }}
+          />
+          <h2>@{userData.username}</h2>
+          <p>Account Type: {userData.account_type}</p>
+          <p>Media Posts: {userData.media_count}</p>
         </div>
+      ) : (
+        <p>Loading user data...</p>
       )}
-    </BackgroundLines>
+    </div>
   );
 }
